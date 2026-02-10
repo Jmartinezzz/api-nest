@@ -1,4 +1,4 @@
-import { Controller, Get, Param } from '@nestjs/common';
+import { Body, Controller, Delete, Get, NotFoundException, Param, Post, Put, UnprocessableEntityException } from '@nestjs/common';
 
 interface User {
 	id: number;
@@ -21,6 +21,54 @@ export class UsersController {
 
 	@Get(':id')
 	findUSer(@Param('id') id: number) {
-		return this.users.find((user) => user.id == id	)
+		const user =  this.users.find((user) => user.id == id	)
+
+		if (!user) {
+			throw new NotFoundException('User not found')
+		}
+
+		return user
+	}
+
+	@Post()
+	createUser(@Body() body: User) {
+		const newUser = {
+			...body,
+			id: new Date().getTime()
+		}
+		this.users.push(newUser)
+		return newUser
+	}
+
+	@Put(':id')
+	updateUser(@Param('id') id: number, @Body() body: User) {
+		const position = this.users.findIndex((user) => user.id == id)
+		if (position === -1) {
+			throw new NotFoundException('User not found')
+		}
+
+		const currentUser = this.users[position]
+
+		const email = body?.email
+		if (email && !email.includes('@')) {
+			throw new UnprocessableEntityException('Invalid email format')
+		}
+
+		const updatedUser = {
+			...currentUser,
+			...body
+		}
+		this.users[position] = updatedUser
+		return updatedUser
+	}
+
+	@Delete(':id')
+	deleteUser(@Param('id') id: number) {
+		const position = this.users.findIndex((user) => user.id == id)
+		if (position === -1) {
+			throw new NotFoundException('User not found')
+		}
+		this.users.splice(position, 1)
+		return { message: 'User deleted successfully' }
 	}
 }
