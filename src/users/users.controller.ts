@@ -1,4 +1,5 @@
 import { Body, Controller, Delete, Get, NotFoundException, Param, Post, Put, UnprocessableEntityException } from '@nestjs/common';
+import { CreateUserDto } from './user.dto';
 
 interface User {
 	id: number;
@@ -31,7 +32,7 @@ export class UsersController {
 	}
 
 	@Post()
-	createUser(@Body() body: User) {
+	createUser(@Body() body: CreateUserDto) {
 		const newUser = {
 			...body,
 			id: new Date().getTime()
@@ -48,11 +49,6 @@ export class UsersController {
 		}
 
 		const currentUser = this.users[position]
-
-		const email = body?.email
-		if (email && !email.includes('@')) {
-			throw new UnprocessableEntityException('Invalid email format')
-		}
 
 		const updatedUser = {
 			...currentUser,
