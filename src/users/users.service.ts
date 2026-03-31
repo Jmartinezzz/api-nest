@@ -1,9 +1,10 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 
-import { CreateUserDto, UpdateUserDto } from './user.dto';
+import { CreateUserDto, UpdateUserDto } from './dtos/user.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from './entities/user.entity';
+import { log } from 'console';
 
 @Injectable()
 export class UsersService {
@@ -13,12 +14,19 @@ export class UsersService {
 	) { }
 
 	async findAll() {
-		return await this.userRepository.find()
+		return await this.userRepository.find({
+			relations: ['profile']
+		})
 	}
 
 	async getUserById(id: number) {
 		const user = await this.findOne(id)
 		return user
+	}
+
+	async getProfileByUserId(id: number) {
+		const user = await this.findOne(id)
+		return user.profile
 	}
 
 	async create(user: CreateUserDto) {
@@ -31,20 +39,30 @@ export class UsersService {
 	}
 
 	async update(id: number, user: UpdateUserDto) {
-		const currentUser = await this.findOne(id)
-
-		const updatedUser = this.userRepository.merge(currentUser, user)
-		return this.userRepository.save(updatedUser)
+		try {
+			const currentUser = await this.findOne(id)
+			const updatedUser = this.userRepository.merge(currentUser, user)
+			const savedUser = await this.userRepository.save(updatedUser)
+			return savedUser
+		} catch (error) {
+			throw new BadRequestException("Error updating user")
+		}
 	}
 
 	async delete(id: number) {
-		const user = await this.findOne(id)
-		await this.userRepository.delete(user.id)
-		return { message: 'User deleted successfully' }
+		try {
+			await this.userRepository.delete(id)
+			return { message: 'User deleted successfully' }
+		} catch {
+			throw new BadRequestException("Error deleting user")
+		}
 	}
 
 	private async findOne(id: number) {
-		const user = await this.userRepository.findOneBy({ id })
+		const user = await this.userRepository.findOne({
+			where: { id },
+			relations: ['profile']
+		})
 		if (!user) {
 			throw new NotFoundException('User not found')
 		}
