@@ -13,19 +13,27 @@ export class PostsService {
 
   async create(createPostDto: CreatePostDto) {
     try {
-      const newPost = await this.postRepository.save(createPostDto);
-      return newPost;
+      const newPost = await this.postRepository.save({
+        ...createPostDto,
+        user: { id: createPostDto.userId }
+      });
+      return this.findOne(newPost.id);
     } catch (error) {
       throw new BadRequestException('Error creating post');
     }
   }
 
   async findAll() {
-    return await this.postRepository.find();
+    return await this.postRepository.find({
+      relations: ['user.profile']
+    });
   }
 
   async findOne(id: number) {
-    const post = await this.postRepository.findOne({ where: { id } });
+    const post = await this.postRepository.findOne({ 
+      where: { id },
+      relations: ['user.profile']
+    });
     if (!post) {
       throw new NotFoundException('Post not found');
     }
@@ -51,5 +59,4 @@ export class PostsService {
       throw new BadRequestException('Error deleting post');
     }
   }
-}
 }
